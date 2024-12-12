@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Financial Tracker</title>
+    <script>
+        const users = {};
+
+        function registerUser() {
+            const username = document.getElementById('registerUsername').value;
+            const password = document.getElementById('registerPassword').value;
+            if (username && password) {
+                if (!users[username]) {
+                    users[username] = { password, annualTotals: {}, income: [], bills: [] };
+                    alert('User registered successfully!');
+                } else {
+                    alert('Username already exists.');
+                }
+            } else {
+                alert('Please fill in both fields.');
+            }
+        }
+
+        function loginUser() {
+            const username = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
+            if (users[username] && users[username].password === password) {
+                alert('Login successful!');
+                document.getElementById('mainApp').style.display = 'block';
+                document.getElementById('loginSection').style.display = 'none';
+                localStorage.setItem('currentUser', username);
+            } else {
+                alert('Invalid username or password.');
+            }
+        }
+
+        function addIncome() {
+            const amount = parseFloat(document.getElementById('incomeAmount').value);
+            const username = localStorage.getItem('currentUser');
+            if (!isNaN(amount)) {
+                users[username].income.push(amount);
+                updateAnnualTotals();
+                alert('Income added!');
+            } else {
+                alert('Please enter a valid number.');
+            }
+        }
+
+        function addBill() {
+            const amount = parseFloat(document.getElementById('billAmount').value);
+            const username = localStorage.getItem('currentUser');
+            if (!isNaN(amount)) {
+                users[username].bills.push(amount);
+                updateAnnualTotals();
+                alert('Bill added!');
+            } else {
+                alert('Please enter a valid number.');
+            }
+        }
+
+        function updateAnnualTotals() {
+            const username = localStorage.getItem('currentUser');
+            const user = users[username];
+            const income = user.income.reduce((acc, val) => acc + val, 0);
+            const bills = user.bills.reduce((acc, val) => acc + val, 0);
+
+            user.annualTotals = {
+                Income: income,
+                TotalExpenses: bills,
+                Bills: bills,
+                Expenses: bills,
+                Savings: income - bills,
+                Debt: 0 // Placeholder for debt calculations
+            };
+
+            displayAnnualTotals();
+        }
+
+        function displayAnnualTotals() {
+            const username = localStorage.getItem('currentUser');
+            const totals = users[username].annualTotals;
+            let output = '';
+            for (const key in totals) {
+                output += `<p>${key}: ${totals[key]}</p>`;
+            }
+            document.getElementById('annualTotals').innerHTML = output;
+        }
+    </script>
+</head>
+<body>
+    <div id="loginSection">
+        <h2>Register</h2>
+        <input id="registerUsername" type="text" placeholder="Username">
+        <input id="registerPassword" type="password" placeholder="Password">
+        <button onclick="registerUser()">Register</button>
+
+        <h2>Login</h2>
+        <input id="loginUsername" type="text" placeholder="Username">
+        <input id="loginPassword" type="password" placeholder="Password">
+        <button onclick="loginUser()">Login</button>
+    </div>
+
+    <div id="mainApp" style="display:none;">
+        <h2>Annual Totals</h2>
+        <div id="annualTotals"></div>
+
+        <h2>Add Income</h2>
+        <input id="incomeAmount" type="number" placeholder="Income Amount">
+        <button onclick="addIncome()">Add Income</button>
+
+        <h2>Add Bill</h2>
+        <input id="billAmount" type="number" placeholder="Bill Amount">
+        <button onclick="addBill()">Add Bill</button>
+    </div>
+</body>
+</html>
