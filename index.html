@@ -103,62 +103,12 @@
                 this.setState({ currentPage: page, currentMonth: month });
             };
 
-            addTransaction = (month, transaction) => {
-                const transactions = { ...this.state.transactions };
-                if (!transactions[month]) {
-                    transactions[month] = [];
+            addCategory = (type, category) => {
+                const categories = { ...this.state.categories };
+                if (!categories[type].includes(category)) {
+                    categories[type].push(category);
+                    this.setState({ categories });
                 }
-                transactions[month].push(transaction);
-                this.setState({ transactions });
-            };
-
-            renderLoginPage = () => {
-                return (
-                    <div>
-                        <h2>Login</h2>
-                        <form
-                            onSubmit={(e) => {
-                                e.preventDefault();
-                                const username = e.target.elements.username.value;
-                                const password = e.target.elements.password.value;
-                                this.loginUser(username, password);
-                            }}
-                        >
-                            <div>
-                                <label>
-                                    Username: <input type="text" name="username" required />
-                                </label>
-                            </div>
-                            <div>
-                                <label>
-                                    Password: <input type="password" name="password" required />
-                                </label>
-                            </div>
-                            <button type="submit">Login</button>
-                        </form>
-                        <h2>Register</h2>
-                        <form
-                            onSubmit={(e) => {
-                                e.preventDefault();
-                                const username = e.target.elements.username.value;
-                                const password = e.target.elements.password.value;
-                                this.registerUser(username, password);
-                            }}
-                        >
-                            <div>
-                                <label>
-                                    Username: <input type="text" name="username" required />
-                                </label>
-                            </div>
-                            <div>
-                                <label>
-                                    Password: <input type="password" name="password" required />
-                                </label>
-                            </div>
-                            <button type="submit">Register</button>
-                        </form>
-                    </div>
-                );
             };
 
             renderTabs = () => {
@@ -185,17 +135,13 @@
                 return (
                     <div>
                         <h2>Main Page</h2>
-                        <h3>Categories</h3>
+                        <h3>Add Categories</h3>
                         <form
                             onSubmit={(e) => {
                                 e.preventDefault();
                                 const type = e.target.elements.type.value;
                                 const category = e.target.elements.category.value;
-                                const categories = { ...this.state.categories };
-                                if (!categories[type].includes(category)) {
-                                    categories[type].push(category);
-                                    this.setState({ categories });
-                                }
+                                this.addCategory(type, category);
                                 e.target.reset();
                             }}
                         >
@@ -221,12 +167,21 @@
                         <h3>Summary Tables</h3>
                         {Object.keys(categories).map((type) => (
                             <div key={type}>
-                                <h4>{type.charAt(0).toUpperCase() + type.slice(1)} Categories</h4>
-                                <ul>
-                                    {categories[type].map((category, index) => (
-                                        <li key={index}>{category}</li>
-                                    ))}
-                                </ul>
+                                <h4>{type.charAt(0).toUpperCase() + type.slice(1)}</h4>
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Category</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {categories[type].map((category, index) => (
+                                            <tr key={index}>
+                                                <td>{category}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
                             </div>
                         ))}
                     </div>
@@ -301,7 +256,52 @@
                 const { currentUser, currentPage } = this.state;
 
                 if (!currentUser) {
-                    return this.renderLoginPage();
+                    return (
+                        <div>
+                            <h2>Login</h2>
+                            <form
+                                onSubmit={(e) => {
+                                    e.preventDefault();
+                                    const username = e.target.elements.username.value;
+                                    const password = e.target.elements.password.value;
+                                    this.loginUser(username, password);
+                                }}
+                            >
+                                <div>
+                                    <label>
+                                        Username: <input type="text" name="username" required />
+                                    </label>
+                                </div>
+                                <div>
+                                    <label>
+                                        Password: <input type="password" name="password" required />
+                                    </label>
+                                </div>
+                                <button type="submit">Login</button>
+                            </form>
+                            <h2>Register</h2>
+                            <form
+                                onSubmit={(e) => {
+                                    e.preventDefault();
+                                    const username = e.target.elements.username.value;
+                                    const password = e.target.elements.password.value;
+                                    this.registerUser(username, password);
+                                }}
+                            >
+                                <div>
+                                    <label>
+                                        Username: <input type="text" name="username" required />
+                                    </label>
+                                </div>
+                                <div>
+                                    <label>
+                                        Password: <input type="password" name="password" required />
+                                    </label>
+                                </div>
+                                <button type="submit">Register</button>
+                            </form>
+                        </div>
+                    );
                 }
 
                 return (
