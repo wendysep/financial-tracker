@@ -59,6 +59,7 @@
                     users: {},
                     currentUser: null,
                     currentPage: 'main',
+                    currentMonth: null,
                     transactions: {}, // Keyed by month
                 };
             }
@@ -98,8 +99,8 @@
                 }
             };
 
-            navigateTo = (page) => {
-                this.setState({ currentPage: page });
+            navigateTo = (page, month = null) => {
+                this.setState({ currentPage: page, currentMonth: month });
             };
 
             addTransaction = (month, transaction) => {
@@ -112,23 +113,26 @@
             };
 
             renderMainPage = () => {
+                const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
                 return (
                     <div>
                         <h2>Main Page</h2>
-                        <button onClick={() => this.navigateTo('transactions')}>Go to Transactions</button>
-                        {/* Add summary or totals here based on transactions */}
+                        <div className="navigation">
+                            {months.map((month) => (
+                                <button key={month} onClick={() => this.navigateTo('transactions', month)}>
+                                    {month}
+                                </button>
+                            ))}
+                        </div>
+                        <h3>Summary</h3>
+                        {/* Totals and summaries based on transactions can be displayed here */}
                     </div>
                 );
             };
 
             renderTransactionPage = () => {
-                const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
-                const currentMonth = prompt('Enter month (e.g., JAN, FEB):').toUpperCase();
-
-                if (!months.includes(currentMonth)) {
-                    alert('Invalid month!');
-                    return this.navigateTo('main');
-                }
+                const { currentMonth, transactions } = this.state;
+                if (!currentMonth) return null;
 
                 return (
                     <div>
@@ -176,7 +180,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                {(this.state.transactions[currentMonth] || []).map((transaction, index) => (
+                                {(transactions[currentMonth] || []).map((transaction, index) => (
                                     <tr key={index}>
                                         <td>{transaction.description}</td>
                                         <td>${transaction.amount.toFixed(2)}</td>
