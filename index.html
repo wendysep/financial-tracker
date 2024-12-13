@@ -4,149 +4,185 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Financial Tracker</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
     <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
         table {
             border-collapse: collapse;
             width: 100%;
             margin-top: 20px;
         }
-
         th, td {
             border: 1px solid #ddd;
             padding: 8px;
             text-align: center;
         }
-
         th {
             background-color: #4CAF50;
             color: white;
         }
-
         tr:nth-child(even) {
             background-color: #f2f2f2;
         }
-
         tr:hover {
             background-color: #ddd;
         }
     </style>
-    <script>
-        const users = {};
-
-        function registerUser() {
-            const username = document.getElementById('registerUsername').value;
-            const password = document.getElementById('registerPassword').value;
-            if (username && password) {
-                if (!users[username]) {
-                    users[username] = { password, annualTotals: {}, income: [], bills: [] };
-                    alert('User registered successfully!');
-                } else {
-                    alert('Username already exists.');
-                }
-            } else {
-                alert('Please fill in both fields.');
-            }
-        }
-
-        function loginUser() {
-            const username = document.getElementById('loginUsername').value;
-            const password = document.getElementById('loginPassword').value;
-            if (users[username] && users[username].password === password) {
-                alert('Login successful!');
-                document.getElementById('mainApp').style.display = 'block';
-                document.getElementById('loginSection').style.display = 'none';
-                localStorage.setItem('currentUser', username);
-            } else {
-                alert('Invalid username or password.');
-            }
-        }
-
-        function addIncome() {
-            const amount = parseFloat(document.getElementById('incomeAmount').value);
-            const username = localStorage.getItem('currentUser');
-            if (!isNaN(amount)) {
-                users[username].income.push(amount);
-                updateAnnualTotals();
-                alert('Income added!');
-            } else {
-                alert('Please enter a valid number.');
-            }
-        }
-
-        function addBill() {
-            const amount = parseFloat(document.getElementById('billAmount').value);
-            const username = localStorage.getItem('currentUser');
-            if (!isNaN(amount)) {
-                users[username].bills.push(amount);
-                updateAnnualTotals();
-                alert('Bill added!');
-            } else {
-                alert('Please enter a valid number.');
-            }
-        }
-
-        function updateAnnualTotals() {
-            const username = localStorage.getItem('currentUser');
-            const user = users[username];
-            const income = user.income.reduce((acc, val) => acc + val, 0);
-            const bills = user.bills.reduce((acc, val) => acc + val, 0);
-
-            user.annualTotals = {
-                Income: income,
-                TotalExpenses: bills,
-                Bills: bills,
-                Expenses: bills,
-                Savings: income - bills,
-                Debt: 0 // Placeholder for debt calculations
-            };
-
-            displayAnnualTotals();
-        }
-
-        function displayAnnualTotals() {
-            const username = localStorage.getItem('currentUser');
-            const totals = users[username].annualTotals;
-            const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
-
-            let table = `<table><tr><th>ANNUAL TOTALS</th>`;
-            months.forEach(month => table += `<th>${month}</th>`);
-            table += `</tr>`;
-
-            for (const key in totals) {
-                table += `<tr><td>${key}</td>`;
-                months.forEach(() => table += `<td>$${totals[key].toFixed(2)}</td>`);
-                table += `</tr>`;
-            }
-
-            table += `</table>`;
-            document.getElementById('annualTotals').innerHTML = table;
-        }
-    </script>
 </head>
 <body>
-    <div id="loginSection">
-        <h2>Register</h2>
-        <input id="registerUsername" type="text" placeholder="Username">
-        <input id="registerPassword" type="password" placeholder="Password">
-        <button onclick="registerUser()">Register</button>
+    <div id="root"></div>
 
-        <h2>Login</h2>
-        <input id="loginUsername" type="text" placeholder="Username">
-        <input id="loginPassword" type="password" placeholder="Password">
-        <button onclick="loginUser()">Login</button>
-    </div>
+    <script type="text/babel">
+        class FinancialTracker extends React.Component {
+            constructor(props) {
+                super(props);
+                this.state = {
+                    users: {},
+                    currentUser: null,
+                    username: '',
+                    password: '',
+                    income: '',
+                    bills: '',
+                };
+            }
 
-    <div id="mainApp" style="display:none;">
-        <h2>Annual Totals</h2>
-        <div id="annualTotals"></div>
+            registerUser = () => {
+                const { username, password, users } = this.state;
+                if (username && password) {
+                    if (!users[username]) {
+                        users[username] = { password, annualTotals: {}, income: [], bills: [] };
+                        this.setState({ users });
+                        alert('User registered successfully!');
+                    } else {
+                        alert('Username already exists.');
+                    }
+                } else {
+                    alert('Please fill in both fields.');
+                }
+            };
 
-        <h2>Add Income</h2>
-        <input id="incomeAmount" type="number" placeholder="Income Amount">
-        <button onclick="addIncome()">Add Income</button>
+            loginUser = () => {
+                const { username, password, users } = this.state;
+                if (users[username] && users[username].password === password) {
+                    this.setState({ currentUser: username });
+                } else {
+                    alert('Invalid username or password.');
+                }
+            };
 
-        <h2>Add Bill</h2>
-        <input id="billAmount" type="number" placeholder="Bill Amount">
-        <button onclick="addBill()">Add Bill</button>
-    </div>
+            addIncome = () => {
+                const { income, currentUser, users } = this.state;
+                const amount = parseFloat(income);
+                if (!isNaN(amount)) {
+                    users[currentUser].income.push(amount);
+                    this.updateAnnualTotals();
+                    this.setState({ users, income: '' });
+                } else {
+                    alert('Please enter a valid number.');
+                }
+            };
+
+            addBill = () => {
+                const { bills, currentUser, users } = this.state;
+                const amount = parseFloat(bills);
+                if (!isNaN(amount)) {
+                    users[currentUser].bills.push(amount);
+                    this.updateAnnualTotals();
+                    this.setState({ users, bills: '' });
+                } else {
+                    alert('Please enter a valid number.');
+                }
+            };
+
+            updateAnnualTotals = () => {
+                const { currentUser, users } = this.state;
+                const user = users[currentUser];
+                const income = user.income.reduce((acc, val) => acc + val, 0);
+                const bills = user.bills.reduce((acc, val) => acc + val, 0);
+
+                user.annualTotals = {
+                    Income: income,
+                    TotalExpenses: bills,
+                    Bills: bills,
+                    Expenses: bills,
+                    Savings: income - bills,
+                    Debt: 0
+                };
+
+                this.setState({ users });
+            };
+
+            renderAnnualTotals = () => {
+                const { currentUser, users } = this.state;
+                const user = users[currentUser];
+                if (!user || !user.annualTotals) return null;
+
+                const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+                return (
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ANNUAL TOTALS</th>
+                                {months.map((month, index) => (
+                                    <th key={index}>{month}</th>
+                                ))}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {Object.entries(user.annualTotals).map(([key, value]) => (
+                                <tr key={key}>
+                                    <td>{key}</td>
+                                    {months.map((_, index) => (
+                                        <td key={index}>${value.toFixed(2)}</td>
+                                    ))}
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                );
+            };
+
+            render() {
+                const { currentUser, username, password, income, bills } = this.state;
+                return (
+                    <div>
+                        {!currentUser ? (
+                            <div>
+                                <h2>Register</h2>
+                                <input type="text" value={username} onChange={(e) => this.setState({ username: e.target.value })} placeholder="Username" />
+                                <input type="password" value={password} onChange={(e) => this.setState({ password: e.target.value })} placeholder="Password" />
+                                <button onClick={this.registerUser}>Register</button>
+
+                                <h2>Login</h2>
+                                <input type="text" value={username} onChange={(e) => this.setState({ username: e.target.value })} placeholder="Username" />
+                                <input type="password" value={password} onChange={(e) => this.setState({ password: e.target.value })} placeholder="Password" />
+                                <button onClick={this.loginUser}>Login</button>
+                            </div>
+                        ) : (
+                            <div>
+                                <h2>Annual Totals</h2>
+                                {this.renderAnnualTotals()}
+
+                                <h2>Add Income</h2>
+                                <input type="number" value={income} onChange={(e) => this.setState({ income: e.target.value })} placeholder="Income Amount" />
+                                <button onClick={this.addIncome}>Add Income</button>
+
+                                <h2>Add Bill</h2>
+                                <input type="number" value={bills} onChange={(e) => this.setState({ bills: e.target.value })} placeholder="Bill Amount" />
+                                <button onClick={this.addBill}>Add Bill</button>
+                            </div>
+                        )}
+                    </div>
+                );
+            }
+        }
+
+        ReactDOM.render(<FinancialTracker />, document.getElementById('root'));
+    </script>
 </body>
 </html>
