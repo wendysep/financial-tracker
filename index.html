@@ -32,19 +32,26 @@
         tr:hover {
             background-color: #ddd;
         }
-        .navigation {
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid #ddd;
             margin-bottom: 20px;
         }
-        .navigation button {
-            margin-right: 10px;
-            padding: 10px;
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border: 1px solid #ddd;
+            border-bottom: none;
+            background-color: #f9f9f9;
+        }
+        .tab.active {
             background-color: #4CAF50;
             color: white;
-            border: none;
-            cursor: pointer;
+            border-bottom: 2px solid white;
         }
-        .navigation button:hover {
+        .tab:hover {
             background-color: #45a049;
+            color: white;
         }
     </style>
 </head>
@@ -61,36 +68,29 @@
                     currentPage: 'main',
                     currentMonth: null,
                     transactions: {}, // Keyed by month
+                    categories: { income: [], expense: [], savings: [], debt: [], bills: [] },
                 };
             }
 
-            registerUser = () => {
-                const username = prompt('Enter username:');
-                const password = prompt('Enter password:');
-                if (username && password) {
-                    const users = { ...this.state.users };
-                    if (!users[username]) {
-                        users[username] = {
-                            password,
-                            incomeDetails: {},
-                            expenseDetails: {},
-                            savingsDetails: {},
-                            debtDetails: {},
-                            billDetails: {},
-                        };
-                        this.setState({ users });
-                        alert('User registered successfully!');
-                    } else {
-                        alert('Username already exists.');
-                    }
+            registerUser = (username, password) => {
+                const users = { ...this.state.users };
+                if (!users[username]) {
+                    users[username] = {
+                        password,
+                        incomeDetails: {},
+                        expenseDetails: {},
+                        savingsDetails: {},
+                        debtDetails: {},
+                        billDetails: {},
+                    };
+                    this.setState({ users });
+                    alert('User registered successfully!');
                 } else {
-                    alert('Please provide both username and password.');
+                    alert('Username already exists.');
                 }
             };
 
-            loginUser = () => {
-                const username = prompt('Enter username:');
-                const password = prompt('Enter password:');
+            loginUser = (username, password) => {
                 const user = this.state.users[username];
                 if (user && user.password === password) {
                     this.setState({ currentUser: username });
@@ -112,32 +112,132 @@
                 this.setState({ transactions });
             };
 
+            renderLoginPage = () => {
+                return (
+                    <div>
+                        <h2>Login</h2>
+                        <form
+                            onSubmit={(e) => {
+                                e.preventDefault();
+                                const username = e.target.elements.username.value;
+                                const password = e.target.elements.password.value;
+                                this.loginUser(username, password);
+                            }}
+                        >
+                            <div>
+                                <label>
+                                    Username: <input type="text" name="username" required />
+                                </label>
+                            </div>
+                            <div>
+                                <label>
+                                    Password: <input type="password" name="password" required />
+                                </label>
+                            </div>
+                            <button type="submit">Login</button>
+                        </form>
+                        <h2>Register</h2>
+                        <form
+                            onSubmit={(e) => {
+                                e.preventDefault();
+                                const username = e.target.elements.username.value;
+                                const password = e.target.elements.password.value;
+                                this.registerUser(username, password);
+                            }}
+                        >
+                            <div>
+                                <label>
+                                    Username: <input type="text" name="username" required />
+                                </label>
+                            </div>
+                            <div>
+                                <label>
+                                    Password: <input type="password" name="password" required />
+                                </label>
+                            </div>
+                            <button type="submit">Register</button>
+                        </form>
+                    </div>
+                );
+            };
+
+            renderTabs = () => {
+                const tabs = ["main", "JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+                const { currentPage } = this.state;
+
+                return (
+                    <div className="tabs">
+                        {tabs.map((tab) => (
+                            <div
+                                key={tab}
+                                className={`tab ${currentPage === tab ? 'active' : ''}`}
+                                onClick={() => this.navigateTo(tab, tab !== 'main' ? tab : null)}
+                            >
+                                {tab}
+                            </div>
+                        ))}
+                    </div>
+                );
+            };
+
             renderMainPage = () => {
-                const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+                const { categories } = this.state;
                 return (
                     <div>
                         <h2>Main Page</h2>
-                        <div className="navigation">
-                            {months.map((month) => (
-                                <button key={month} onClick={() => this.navigateTo('transactions', month)}>
-                                    {month}
-                                </button>
-                            ))}
-                        </div>
-                        <h3>Summary</h3>
-                        {/* Totals and summaries based on transactions can be displayed here */}
+                        <h3>Categories</h3>
+                        <form
+                            onSubmit={(e) => {
+                                e.preventDefault();
+                                const type = e.target.elements.type.value;
+                                const category = e.target.elements.category.value;
+                                const categories = { ...this.state.categories };
+                                if (!categories[type].includes(category)) {
+                                    categories[type].push(category);
+                                    this.setState({ categories });
+                                }
+                                e.target.reset();
+                            }}
+                        >
+                            <div>
+                                <label>
+                                    Type:
+                                    <select name="type" required>
+                                        <option value="income">Income</option>
+                                        <option value="expense">Expense</option>
+                                        <option value="savings">Savings</option>
+                                        <option value="debt">Debt</option>
+                                        <option value="bills">Bills</option>
+                                    </select>
+                                </label>
+                            </div>
+                            <div>
+                                <label>
+                                    Category: <input type="text" name="category" required />
+                                </label>
+                            </div>
+                            <button type="submit">Add Category</button>
+                        </form>
+                        <h3>Summary Tables</h3>
+                        {Object.keys(categories).map((type) => (
+                            <div key={type}>
+                                <h4>{type.charAt(0).toUpperCase() + type.slice(1)} Categories</h4>
+                                <ul>
+                                    {categories[type].map((category, index) => (
+                                        <li key={index}>{category}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                        ))}
                     </div>
                 );
             };
 
             renderTransactionPage = () => {
-                const { currentMonth, transactions } = this.state;
-                if (!currentMonth) return null;
-
+                const { currentMonth, transactions, categories } = this.state;
                 return (
                     <div>
                         <h2>Transactions for {currentMonth}</h2>
-                        <button onClick={() => this.navigateTo('main')}>Back to Main</button>
                         <form
                             onSubmit={(e) => {
                                 e.preventDefault();
@@ -164,12 +264,16 @@
                             </div>
                             <div>
                                 <label>
-                                    Category: <input type="text" name="category" required />
+                                    Category:
+                                    <select name="category" required>
+                                        {Object.values(categories).flat().map((category, index) => (
+                                            <option key={index} value={category}>{category}</option>
+                                        ))}
+                                    </select>
                                 </label>
                             </div>
                             <button type="submit">Add Transaction</button>
                         </form>
-
                         <h3>Transaction List</h3>
                         <table>
                             <thead>
@@ -197,23 +301,15 @@
                 const { currentUser, currentPage } = this.state;
 
                 if (!currentUser) {
-                    return (
-                        <div>
-                            <button onClick={this.registerUser}>Register</button>
-                            <button onClick={this.loginUser}>Login</button>
-                        </div>
-                    );
+                    return this.renderLoginPage();
                 }
 
-                if (currentPage === 'main') {
-                    return this.renderMainPage();
-                }
-
-                if (currentPage === 'transactions') {
-                    return this.renderTransactionPage();
-                }
-
-                return null;
+                return (
+                    <div>
+                        {this.renderTabs()}
+                        {currentPage === 'main' ? this.renderMainPage() : this.renderTransactionPage()}
+                    </div>
+                );
             }
         }
 
