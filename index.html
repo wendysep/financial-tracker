@@ -4,6 +4,32 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Financial Tracker</title>
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+
+        tr:hover {
+            background-color: #ddd;
+        }
+    </style>
     <script>
         const users = {};
 
@@ -80,11 +106,20 @@
         function displayAnnualTotals() {
             const username = localStorage.getItem('currentUser');
             const totals = users[username].annualTotals;
-            let output = '';
+            const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+
+            let table = `<table><tr><th>ANNUAL TOTALS</th>`;
+            months.forEach(month => table += `<th>${month}</th>`);
+            table += `</tr>`;
+
             for (const key in totals) {
-                output += `<p>${key}: ${totals[key]}</p>`;
+                table += `<tr><td>${key}</td>`;
+                months.forEach(() => table += `<td>$${totals[key].toFixed(2)}</td>`);
+                table += `</tr>`;
             }
-            document.getElementById('annualTotals').innerHTML = output;
+
+            table += `</table>`;
+            document.getElementById('annualTotals').innerHTML = table;
         }
     </script>
 </head>
