@@ -32,6 +32,20 @@
         tr:hover {
             background-color: #ddd;
         }
+        .navigation {
+            margin-bottom: 20px;
+        }
+        .navigation button {
+            margin-right: 10px;
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        .navigation button:hover {
+            background-color: #45a049;
+        }
     </style>
 </head>
 <body>
@@ -44,29 +58,16 @@
                 this.state = {
                     users: {},
                     currentUser: null,
-                    username: '',
-                    password: '',
-                    incomeSource: '',
-                    incomeAmount: '',
-                    expenseCategory: '',
-                    expenseAmount: '',
-                    savingsCategory: '',
-                    savingsAmount: '',
-                    debtCategory: '',
-                    debtAmount: '',
-                    billCategory: '',
-                    billAmount: '',
-                    incomeDetails: {},
-                    expenseDetails: {},
-                    savingsDetails: {},
-                    debtDetails: {},
-                    billDetails: {},
+                    currentPage: 'main',
+                    transactions: {}, // Keyed by month
                 };
             }
 
             registerUser = () => {
-                const { username, password, users } = this.state;
+                const username = prompt('Enter username:');
+                const password = prompt('Enter password:');
                 if (username && password) {
+                    const users = { ...this.state.users };
                     if (!users[username]) {
                         users[username] = {
                             password,
@@ -74,7 +75,7 @@
                             expenseDetails: {},
                             savingsDetails: {},
                             debtDetails: {},
-                            billDetails: {}
+                            billDetails: {},
                         };
                         this.setState({ users });
                         alert('User registered successfully!');
@@ -82,188 +83,133 @@
                         alert('Username already exists.');
                     }
                 } else {
-                    alert('Please fill in both fields.');
+                    alert('Please provide both username and password.');
                 }
             };
 
             loginUser = () => {
-                const { username, password, users } = this.state;
-                if (users[username] && users[username].password === password) {
+                const username = prompt('Enter username:');
+                const password = prompt('Enter password:');
+                const user = this.state.users[username];
+                if (user && user.password === password) {
                     this.setState({ currentUser: username });
                 } else {
                     alert('Invalid username or password.');
                 }
             };
 
-            addDetail = (type) => {
-                const {
-                    incomeSource, incomeAmount,
-                    expenseCategory, expenseAmount,
-                    savingsCategory, savingsAmount,
-                    debtCategory, debtAmount,
-                    billCategory, billAmount,
-                    currentUser, users
-                } = this.state;
-
-                const category =
-                    type === 'income' ? incomeSource :
-                    type === 'expense' ? expenseCategory :
-                    type === 'savings' ? savingsCategory :
-                    type === 'debt' ? debtCategory :
-                    billCategory;
-
-                const amount =
-                    type === 'income' ? parseFloat(incomeAmount) :
-                    type === 'expense' ? parseFloat(expenseAmount) :
-                    type === 'savings' ? parseFloat(savingsAmount) :
-                    type === 'debt' ? parseFloat(debtAmount) :
-                    parseFloat(billAmount);
-
-                if (category && !isNaN(amount)) {
-                    const detailsKey =
-                        type === 'income' ? 'incomeDetails' :
-                        type === 'expense' ? 'expenseDetails' :
-                        type === 'savings' ? 'savingsDetails' :
-                        type === 'debt' ? 'debtDetails' :
-                        'billDetails';
-
-                    const user = users[currentUser];
-
-                    if (!user[detailsKey][category]) {
-                        user[detailsKey][category] = Array(12).fill(0);
-                    }
-
-                    user[detailsKey][category][new Date().getMonth()] += amount;
-                    this.setState({
-                        users,
-                        incomeSource: '',
-                        incomeAmount: '',
-                        expenseCategory: '',
-                        expenseAmount: '',
-                        savingsCategory: '',
-                        savingsAmount: '',
-                        debtCategory: '',
-                        debtAmount: '',
-                        billCategory: '',
-                        billAmount: ''
-                    });
-                    alert(`${type.charAt(0).toUpperCase() + type.slice(1)} added!`);
-                } else {
-                    alert('Please enter a valid category and amount.');
-                }
+            navigateTo = (page) => {
+                this.setState({ currentPage: page });
             };
 
-            renderDetails = (type) => {
-                const { currentUser, users } = this.state;
-                const user = users[currentUser];
-                if (!user) return null;
+            addTransaction = (month, transaction) => {
+                const transactions = { ...this.state.transactions };
+                if (!transactions[month]) {
+                    transactions[month] = [];
+                }
+                transactions[month].push(transaction);
+                this.setState({ transactions });
+            };
 
-                const detailsKey =
-                    type === 'income' ? 'incomeDetails' :
-                    type === 'expense' ? 'expenseDetails' :
-                    type === 'savings' ? 'savingsDetails' :
-                    type === 'debt' ? 'debtDetails' :
-                    'billDetails';
+            renderMainPage = () => {
+                return (
+                    <div>
+                        <h2>Main Page</h2>
+                        <button onClick={() => this.navigateTo('transactions')}>Go to Transactions</button>
+                        {/* Add summary or totals here based on transactions */}
+                    </div>
+                );
+            };
 
-                const details = user[detailsKey];
+            renderTransactionPage = () => {
                 const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+                const currentMonth = prompt('Enter month (e.g., JAN, FEB):').toUpperCase();
+
+                if (!months.includes(currentMonth)) {
+                    alert('Invalid month!');
+                    return this.navigateTo('main');
+                }
 
                 return (
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>{type.toUpperCase()}</th>
-                                {months.map((month, index) => (
-                                    <th key={index}>{month}</th>
-                                ))}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {Object.entries(details).map(([category, amounts]) => (
-                                <tr key={category}>
-                                    <td>{category}</td>
-                                    {amounts.map((amount, index) => (
-                                        <td key={index}>${amount.toFixed(2)}</td>
-                                    ))}
+                    <div>
+                        <h2>Transactions for {currentMonth}</h2>
+                        <button onClick={() => this.navigateTo('main')}>Back to Main</button>
+                        <form
+                            onSubmit={(e) => {
+                                e.preventDefault();
+                                const description = e.target.elements.description.value;
+                                const amount = parseFloat(e.target.elements.amount.value);
+                                const category = e.target.elements.category.value;
+                                if (!isNaN(amount)) {
+                                    this.addTransaction(currentMonth, { description, amount, category });
+                                    e.target.reset();
+                                } else {
+                                    alert('Invalid amount!');
+                                }
+                            }}
+                        >
+                            <div>
+                                <label>
+                                    Description: <input type="text" name="description" required />
+                                </label>
+                            </div>
+                            <div>
+                                <label>
+                                    Amount: <input type="number" name="amount" required />
+                                </label>
+                            </div>
+                            <div>
+                                <label>
+                                    Category: <input type="text" name="category" required />
+                                </label>
+                            </div>
+                            <button type="submit">Add Transaction</button>
+                        </form>
+
+                        <h3>Transaction List</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Description</th>
+                                    <th>Amount</th>
+                                    <th>Category</th>
                                 </tr>
-                            ))}
-                            <tr>
-                                <td><strong>TOTAL</strong></td>
-                                {months.map((_, index) => (
-                                    <td key={index}>
-                                        ${Object.values(details).reduce((acc, category) => acc + (category[index] || 0), 0).toFixed(2)}
-                                    </td>
+                            </thead>
+                            <tbody>
+                                {(this.state.transactions[currentMonth] || []).map((transaction, index) => (
+                                    <tr key={index}>
+                                        <td>{transaction.description}</td>
+                                        <td>${transaction.amount.toFixed(2)}</td>
+                                        <td>{transaction.category}</td>
+                                    </tr>
                                 ))}
-                            </tr>
-                        </tbody>
-                    </table>
+                            </tbody>
+                        </table>
+                    </div>
                 );
             };
 
             render() {
-                const {
-                    currentUser, username, password,
-                    incomeSource, incomeAmount,
-                    expenseCategory, expenseAmount,
-                    savingsCategory, savingsAmount,
-                    debtCategory, debtAmount,
-                    billCategory, billAmount
-                } = this.state;
+                const { currentUser, currentPage } = this.state;
 
-                return (
-                    <div>
-                        {!currentUser ? (
-                            <div>
-                                <h2>Register</h2>
-                                <input type="text" value={username} onChange={(e) => this.setState({ username: e.target.value })} placeholder="Username" />
-                                <input type="password" value={password} onChange={(e) => this.setState({ password: e.target.value })} placeholder="Password" />
-                                <button onClick={this.registerUser}>Register</button>
+                if (!currentUser) {
+                    return (
+                        <div>
+                            <button onClick={this.registerUser}>Register</button>
+                            <button onClick={this.loginUser}>Login</button>
+                        </div>
+                    );
+                }
 
-                                <h2>Login</h2>
-                                <input type="text" value={username} onChange={(e) => this.setState({ username: e.target.value })} placeholder="Username" />
-                                <input type="password" value={password} onChange={(e) => this.setState({ password: e.target.value })} placeholder="Password" />
-                                <button onClick={this.loginUser}>Login</button>
-                            </div>
-                        ) : (
-                            <div>
-                                <h2>Income Details</h2>
-                                {this.renderDetails('income')}
-                                <h2>Add Income</h2>
-                                <input type="text" value={incomeSource} onChange={(e) => this.setState({ incomeSource: e.target.value })} placeholder="Income Source" />
-                                <input type="number" value={incomeAmount} onChange={(e) => this.setState({ incomeAmount: e.target.value })} placeholder="Amount" />
-                                <button onClick={() => this.addDetail('income')}>Add Income</button>
+                if (currentPage === 'main') {
+                    return this.renderMainPage();
+                }
 
-                                <h2>Expense Details</h2>
-                                {this.renderDetails('expense')}
-                                <h2>Add Expense</h2>
-                                <input type="text" value={expenseCategory} onChange={(e) => this.setState({ expenseCategory: e.target.value })} placeholder="Expense Category" />
-                                <input type="number" value={expenseAmount} onChange={(e) => this.setState({ expenseAmount: e.target.value })} placeholder="Amount" />
-                                <button onClick={() => this.addDetail('expense')}>Add Expense</button>
+                if (currentPage === 'transactions') {
+                    return this.renderTransactionPage();
+                }
 
-                                <h2>Savings Details</h2>
-                                {this.renderDetails('savings')}
-                                <h2>Add Savings</h2>
-                                <input type="text" value={savingsCategory} onChange={(e) => this.setState({ savingsCategory: e.target.value })} placeholder="Savings Category" />
-                                <input type="number" value={savingsAmount} onChange={(e) => this.setState({ savingsAmount: e.target.value })} placeholder="Amount" />
-                                <button onClick={() => this.addDetail('savings')}>Add Savings</button>
-
-                                <h2>Debt Details</h2>
-                                {this.renderDetails('debt')}
-                                <h2>Add Debt</h2>
-                                <input type="text" value={debtCategory} onChange={(e) => this.setState({ debtCategory: e.target.value })} placeholder="Debt Category" />
-                                <input type="number" value={debtAmount} onChange={(e) => this.setState({ debtAmount: e.target.value })} placeholder="Amount" />
-                                <button onClick={() => this.addDetail('debt')}>Add Debt</button>
-
-                                <h2>Bill Details</h2>
-                                {this.renderDetails('bill')}
-                                <h2>Add Bill</h2>
-                                <input type="text" value={billCategory} onChange={(e) => this.setState({ billCategory: e.target.value })} placeholder="Bill Category" />
-                                <input type="number" value={billAmount} onChange={(e) => this.setState({ billAmount: e.target.value })} placeholder="Amount" />
-                                <button onClick={() => this.addDetail('bill')}>Add Bill</button>
-                            </div>
-                        )}
-                    </div>
-                );
+                return null;
             }
         }
 
