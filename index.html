@@ -66,9 +66,9 @@
                     users: {},
                     currentUser: null,
                     currentPage: 'main',
-                    currentMonth: null,
                     transactions: {}, // Keyed by month
                     categories: { income: [], expense: [], savings: [], debt: [], bills: [] },
+                    monthlyData: { income: {}, expense: {}, savings: {}, debt: {}, bills: {} },
                 };
             }
 
@@ -77,11 +77,6 @@
                 if (!users[username]) {
                     users[username] = {
                         password,
-                        incomeDetails: {},
-                        expenseDetails: {},
-                        savingsDetails: {},
-                        debtDetails: {},
-                        billDetails: {},
                     };
                     this.setState({ users });
                     alert('User registered successfully!');
@@ -99,16 +94,25 @@
                 }
             };
 
-            navigateTo = (page, month = null) => {
-                this.setState({ currentPage: page, currentMonth: month });
+            navigateTo = (page) => {
+                this.setState({ currentPage: page });
             };
 
             addCategory = (type, category) => {
                 const categories = { ...this.state.categories };
+                const monthlyData = { ...this.state.monthlyData };
+
                 if (!categories[type].includes(category)) {
                     categories[type].push(category);
-                    this.setState({ categories });
+                    monthlyData[type][category] = Array(12).fill(0);
+                    this.setState({ categories, monthlyData });
                 }
+            };
+
+            updateMonthlyData = (type, category, monthIndex, amount) => {
+                const monthlyData = { ...this.state.monthlyData };
+                monthlyData[type][category][monthIndex] = parseFloat(amount) || 0;
+                this.setState({ monthlyData });
             };
 
             renderTabs = () => {
@@ -121,7 +125,7 @@
                             <div
                                 key={tab}
                                 className={`tab ${currentPage === tab ? 'active' : ''}`}
-                                onClick={() => this.navigateTo(tab, tab !== 'main' ? tab : null)}
+                                onClick={() => this.navigateTo(tab)}
                             >
                                 {tab}
                             </div>
@@ -130,8 +134,72 @@
                 );
             };
 
+            renderTable = (type) => {
+                const { categories, monthlyData } = this.state;
+                const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+
+                return (
+                    <div>
+                        <h4>{type.charAt(0).toUpperCase() + type.slice(1)}</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Category</th>
+                                    {months.map((month) => (
+                                        <th key={month}>{month}</th>
+                                    ))}
+                                    <th>Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {categories[type].map((category, index) => {
+                                    const monthlyTotals = monthlyData[type][category] || Array(12).fill(0);
+                                    const total = monthlyTotals.reduce((acc, val) => acc + val, 0);
+                                    return (
+                                        <tr key={index}>
+                                            <td>{category}</td>
+                                            {monthlyTotals.map((value, monthIndex) => (
+                                                <td key={monthIndex}>
+                                                    <input
+                                                        type="number"
+                                                        value={value}
+                                                        onChange={(e) =>
+                                                            this.updateMonthlyData(type, category, monthIndex, e.target.value)
+                                                        }
+                                                    />
+                                                </td>
+                                            ))}
+                                            <td>${total.toFixed(2)}</td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td><strong>Total</strong></td>
+                                    {months.map((_, monthIndex) => {
+                                        const totalForMonth = categories[type]
+                                            .map((category) => monthlyData[type][category]?.[monthIndex] || 0)
+                                            .reduce((acc, val) => acc + val, 0);
+                                        return <td key={monthIndex}>${totalForMonth.toFixed(2)}</td>;
+                                    })}
+                                    <td>
+                                        ${categories[type]
+                                            .reduce(
+                                                (acc, category) =>
+                                                    acc + (monthlyData[type][category]?.reduce((sum, val) => sum + val, 0) || 0),
+                                                0
+                                            )
+                                            .toFixed(2)}
+                                    </td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                );
+            };
+
             renderMainPage = () => {
-                const { categories } = this.state;
                 return (
                     <div>
                         <h2>Main Page</h2>
@@ -165,89 +233,7 @@
                             <button type="submit">Add Category</button>
                         </form>
                         <h3>Summary Tables</h3>
-                        {Object.keys(categories).map((type) => (
-                            <div key={type}>
-                                <h4>{type.charAt(0).toUpperCase() + type.slice(1)}</h4>
-                                <table>
-                                    <thead>
-                                        <tr>
-                                            <th>Category</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {categories[type].map((category, index) => (
-                                            <tr key={index}>
-                                                <td>{category}</td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        ))}
-                    </div>
-                );
-            };
-
-            renderTransactionPage = () => {
-                const { currentMonth, transactions, categories } = this.state;
-                return (
-                    <div>
-                        <h2>Transactions for {currentMonth}</h2>
-                        <form
-                            onSubmit={(e) => {
-                                e.preventDefault();
-                                const description = e.target.elements.description.value;
-                                const amount = parseFloat(e.target.elements.amount.value);
-                                const category = e.target.elements.category.value;
-                                if (!isNaN(amount)) {
-                                    this.addTransaction(currentMonth, { description, amount, category });
-                                    e.target.reset();
-                                } else {
-                                    alert('Invalid amount!');
-                                }
-                            }}
-                        >
-                            <div>
-                                <label>
-                                    Description: <input type="text" name="description" required />
-                                </label>
-                            </div>
-                            <div>
-                                <label>
-                                    Amount: <input type="number" name="amount" required />
-                                </label>
-                            </div>
-                            <div>
-                                <label>
-                                    Category:
-                                    <select name="category" required>
-                                        {Object.values(categories).flat().map((category, index) => (
-                                            <option key={index} value={category}>{category}</option>
-                                        ))}
-                                    </select>
-                                </label>
-                            </div>
-                            <button type="submit">Add Transaction</button>
-                        </form>
-                        <h3>Transaction List</h3>
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Description</th>
-                                    <th>Amount</th>
-                                    <th>Category</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {(transactions[currentMonth] || []).map((transaction, index) => (
-                                    <tr key={index}>
-                                        <td>{transaction.description}</td>
-                                        <td>${transaction.amount.toFixed(2)}</td>
-                                        <td>{transaction.category}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                        {Object.keys(this.state.categories).map((type) => this.renderTable(type))}
                     </div>
                 );
             };
@@ -307,7 +293,7 @@
                 return (
                     <div>
                         {this.renderTabs()}
-                        {currentPage === 'main' ? this.renderMainPage() : this.renderTransactionPage()}
+                        {currentPage === 'main' && this.renderMainPage()}
                     </div>
                 );
             }
