@@ -112,31 +112,6 @@
                 this.setState({ transactions });
             };
 
-            calculateTotals = (type) => {
-                const { transactions, categories } = this.state;
-                const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
-
-                // Initialize totals for each category and month
-                const totals = categories[type].reduce((acc, category) => {
-                    acc[category] = Array(12).fill(0);
-                    return acc;
-                }, {});
-
-                // Iterate through transactions to calculate totals
-                Object.entries(transactions).forEach(([month, monthTransactions]) => {
-                    const monthIndex = months.indexOf(month);
-                    if (monthIndex !== -1) {
-                        monthTransactions.forEach(({ category, amount }) => {
-                            if (categories[type].includes(category)) {
-                                totals[category][monthIndex] += amount;
-                            }
-                        });
-                    }
-                });
-
-                return totals;
-            };
-
             renderTabs = () => {
                 const tabs = ["main", "JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
                 const { currentPage } = this.state;
@@ -156,60 +131,51 @@
                 );
             };
 
-            renderTable = (type) => {
-                const { categories } = this.state;
-                const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
-                const totals = this.calculateTotals(type);
-
+            renderLoginPage = () => {
                 return (
                     <div>
-                        <h4>{type.charAt(0).toUpperCase() + type.slice(1)}</h4>
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Category</th>
-                                    {months.map((month) => (
-                                        <th key={month}>{month}</th>
-                                    ))}
-                                    <th>Total</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {categories[type].map((category, index) => {
-                                    const monthlyTotals = totals[category] || Array(12).fill(0);
-                                    const total = monthlyTotals.reduce((acc, val) => acc + val, 0);
-                                    return (
-                                        <tr key={index}>
-                                            <td>{category}</td>
-                                            {monthlyTotals.map((value, monthIndex) => (
-                                                <td key={monthIndex}>${value.toFixed(2)}</td>
-                                            ))}
-                                            <td>${total.toFixed(2)}</td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                            <tfoot>
-                                <tr>
-                                    <td><strong>Total</strong></td>
-                                    {months.map((_, monthIndex) => {
-                                        const totalForMonth = categories[type]
-                                            .map((category) => totals[category]?.[monthIndex] || 0)
-                                            .reduce((acc, val) => acc + val, 0);
-                                        return <td key={monthIndex}>${totalForMonth.toFixed(2)}</td>;
-                                    })}
-                                    <td>
-                                        ${categories[type]
-                                            .reduce(
-                                                (acc, category) =>
-                                                    acc + (totals[category]?.reduce((sum, val) => sum + val, 0) || 0),
-                                                0
-                                            )
-                                            .toFixed(2)}
-                                    </td>
-                                </tr>
-                            </tfoot>
-                        </table>
+                        <h2>Login</h2>
+                        <form
+                            onSubmit={(e) => {
+                                e.preventDefault();
+                                const username = e.target.elements.username.value;
+                                const password = e.target.elements.password.value;
+                                this.loginUser(username, password);
+                            }}
+                        >
+                            <div>
+                                <label>
+                                    Username: <input type="text" name="username" required />
+                                </label>
+                            </div>
+                            <div>
+                                <label>
+                                    Password: <input type="password" name="password" required />
+                                </label>
+                            </div>
+                            <button type="submit">Login</button>
+                        </form>
+                        <h2>Register</h2>
+                        <form
+                            onSubmit={(e) => {
+                                e.preventDefault();
+                                const username = e.target.elements.username.value;
+                                const password = e.target.elements.password.value;
+                                this.registerUser(username, password);
+                            }}
+                        >
+                            <div>
+                                <label>
+                                    Username: <input type="text" name="username" required />
+                                </label>
+                            </div>
+                            <div>
+                                <label>
+                                    Password: <input type="password" name="password" required />
+                                </label>
+                            </div>
+                            <button type="submit">Register</button>
+                        </form>
                     </div>
                 );
             };
@@ -248,7 +214,7 @@
                             <button type="submit">Add Category</button>
                         </form>
                         <h3>Summary Tables</h3>
-                        {Object.keys(this.state.categories).map((type) => this.renderTable(type))}
+                        <p>Summary tables will be displayed here.</p>
                     </div>
                 );
             };
@@ -322,52 +288,7 @@
                 const { currentUser, currentPage } = this.state;
 
                 if (!currentUser) {
-                    return (
-                        <div>
-                            <h2>Login</h2>
-                            <form
-                                onSubmit={(e) => {
-                                    e.preventDefault();
-                                    const username = e.target.elements.username.value;
-                                    const password = e.target.elements.password.value;
-                                    this.loginUser(username, password);
-                                }}
-                            >
-                                <div>
-                                    <label>
-                                        Username: <input type="text" name="username" required />
-                                    </label>
-                                </div>
-                                <div>
-                                    <label>
-                                        Password: <input type="password" name="password" required />
-                                    </label>
-                                </div>
-                                <button type="submit">Login</button>
-                            </form>
-                            <h2>Register</h2>
-                            <form
-                                onSubmit={(e) => {
-                                    e.preventDefault();
-                                    const username = e.target.elements.username.value;
-                                    const password = e.target.elements.password.value;
-                                    this.registerUser(username, password);
-                                }}
-                            >
-                                <div>
-                                    <label>
-                                        Username: <input type="text" name="username" required />
-                                    </label>
-                                </div>
-                                <div>
-                                    <label>
-                                        Password: <input type="password" name="password" required />
-                                    </label>
-                                </div>
-                                <button type="submit">Register</button>
-                            </form>
-                        </div>
-                    );
+                    return this.renderLoginPage();
                 }
 
                 return (
