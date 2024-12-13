@@ -48,7 +48,19 @@
                     password: '',
                     incomeSource: '',
                     incomeAmount: '',
+                    expenseCategory: '',
+                    expenseAmount: '',
+                    savingsCategory: '',
+                    savingsAmount: '',
+                    debtCategory: '',
+                    debtAmount: '',
+                    billCategory: '',
+                    billAmount: '',
                     incomeDetails: {},
+                    expenseDetails: {},
+                    savingsDetails: {},
+                    debtDetails: {},
+                    billDetails: {},
                 };
             }
 
@@ -56,7 +68,14 @@
                 const { username, password, users } = this.state;
                 if (username && password) {
                     if (!users[username]) {
-                        users[username] = { password, annualTotals: {}, incomeDetails: {} };
+                        users[username] = {
+                            password,
+                            incomeDetails: {},
+                            expenseDetails: {},
+                            savingsDetails: {},
+                            debtDetails: {},
+                            billDetails: {}
+                        };
                         this.setState({ users });
                         alert('User registered successfully!');
                     } else {
@@ -76,42 +95,93 @@
                 }
             };
 
-            addIncomeDetail = () => {
-                const { incomeSource, incomeAmount, currentUser, users } = this.state;
-                const amount = parseFloat(incomeAmount);
-                if (incomeSource && !isNaN(amount)) {
+            addDetail = (type) => {
+                const {
+                    incomeSource, incomeAmount,
+                    expenseCategory, expenseAmount,
+                    savingsCategory, savingsAmount,
+                    debtCategory, debtAmount,
+                    billCategory, billAmount,
+                    currentUser, users
+                } = this.state;
+
+                const category =
+                    type === 'income' ? incomeSource :
+                    type === 'expense' ? expenseCategory :
+                    type === 'savings' ? savingsCategory :
+                    type === 'debt' ? debtCategory :
+                    billCategory;
+
+                const amount =
+                    type === 'income' ? parseFloat(incomeAmount) :
+                    type === 'expense' ? parseFloat(expenseAmount) :
+                    type === 'savings' ? parseFloat(savingsAmount) :
+                    type === 'debt' ? parseFloat(debtAmount) :
+                    parseFloat(billAmount);
+
+                if (category && !isNaN(amount)) {
+                    const detailsKey =
+                        type === 'income' ? 'incomeDetails' :
+                        type === 'expense' ? 'expenseDetails' :
+                        type === 'savings' ? 'savingsDetails' :
+                        type === 'debt' ? 'debtDetails' :
+                        'billDetails';
+
                     const user = users[currentUser];
-                    if (!user.incomeDetails[incomeSource]) {
-                        user.incomeDetails[incomeSource] = Array(12).fill(0);
+
+                    if (!user[detailsKey][category]) {
+                        user[detailsKey][category] = Array(12).fill(0);
                     }
-                    user.incomeDetails[incomeSource][new Date().getMonth()] += amount;
-                    this.setState({ users, incomeSource: '', incomeAmount: '' });
-                    alert('Income added!');
+
+                    user[detailsKey][category][new Date().getMonth()] += amount;
+                    this.setState({
+                        users,
+                        incomeSource: '',
+                        incomeAmount: '',
+                        expenseCategory: '',
+                        expenseAmount: '',
+                        savingsCategory: '',
+                        savingsAmount: '',
+                        debtCategory: '',
+                        debtAmount: '',
+                        billCategory: '',
+                        billAmount: ''
+                    });
+                    alert(`${type.charAt(0).toUpperCase() + type.slice(1)} added!`);
                 } else {
-                    alert('Please enter a valid source and amount.');
+                    alert('Please enter a valid category and amount.');
                 }
             };
 
-            renderIncomeDetails = () => {
+            renderDetails = (type) => {
                 const { currentUser, users } = this.state;
                 const user = users[currentUser];
-                if (!user || !user.incomeDetails) return null;
+                if (!user) return null;
 
+                const detailsKey =
+                    type === 'income' ? 'incomeDetails' :
+                    type === 'expense' ? 'expenseDetails' :
+                    type === 'savings' ? 'savingsDetails' :
+                    type === 'debt' ? 'debtDetails' :
+                    'billDetails';
+
+                const details = user[detailsKey];
                 const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+
                 return (
                     <table>
                         <thead>
                             <tr>
-                                <th>INCOME</th>
+                                <th>{type.toUpperCase()}</th>
                                 {months.map((month, index) => (
                                     <th key={index}>{month}</th>
                                 ))}
                             </tr>
                         </thead>
                         <tbody>
-                            {Object.entries(user.incomeDetails).map(([source, amounts]) => (
-                                <tr key={source}>
-                                    <td>{source}</td>
+                            {Object.entries(details).map(([category, amounts]) => (
+                                <tr key={category}>
+                                    <td>{category}</td>
                                     {amounts.map((amount, index) => (
                                         <td key={index}>${amount.toFixed(2)}</td>
                                     ))}
@@ -121,7 +191,7 @@
                                 <td><strong>TOTAL</strong></td>
                                 {months.map((_, index) => (
                                     <td key={index}>
-                                        ${Object.values(user.incomeDetails).reduce((acc, source) => acc + (source[index] || 0), 0).toFixed(2)}
+                                        ${Object.values(details).reduce((acc, category) => acc + (category[index] || 0), 0).toFixed(2)}
                                     </td>
                                 ))}
                             </tr>
@@ -131,7 +201,15 @@
             };
 
             render() {
-                const { currentUser, username, password, incomeSource, incomeAmount } = this.state;
+                const {
+                    currentUser, username, password,
+                    incomeSource, incomeAmount,
+                    expenseCategory, expenseAmount,
+                    savingsCategory, savingsAmount,
+                    debtCategory, debtAmount,
+                    billCategory, billAmount
+                } = this.state;
+
                 return (
                     <div>
                         {!currentUser ? (
@@ -149,12 +227,39 @@
                         ) : (
                             <div>
                                 <h2>Income Details</h2>
-                                {this.renderIncomeDetails()}
-
+                                {this.renderDetails('income')}
                                 <h2>Add Income</h2>
                                 <input type="text" value={incomeSource} onChange={(e) => this.setState({ incomeSource: e.target.value })} placeholder="Income Source" />
                                 <input type="number" value={incomeAmount} onChange={(e) => this.setState({ incomeAmount: e.target.value })} placeholder="Amount" />
-                                <button onClick={this.addIncomeDetail}>Add Income</button>
+                                <button onClick={() => this.addDetail('income')}>Add Income</button>
+
+                                <h2>Expense Details</h2>
+                                {this.renderDetails('expense')}
+                                <h2>Add Expense</h2>
+                                <input type="text" value={expenseCategory} onChange={(e) => this.setState({ expenseCategory: e.target.value })} placeholder="Expense Category" />
+                                <input type="number" value={expenseAmount} onChange={(e) => this.setState({ expenseAmount: e.target.value })} placeholder="Amount" />
+                                <button onClick={() => this.addDetail('expense')}>Add Expense</button>
+
+                                <h2>Savings Details</h2>
+                                {this.renderDetails('savings')}
+                                <h2>Add Savings</h2>
+                                <input type="text" value={savingsCategory} onChange={(e) => this.setState({ savingsCategory: e.target.value })} placeholder="Savings Category" />
+                                <input type="number" value={savingsAmount} onChange={(e) => this.setState({ savingsAmount: e.target.value })} placeholder="Amount" />
+                                <button onClick={() => this.addDetail('savings')}>Add Savings</button>
+
+                                <h2>Debt Details</h2>
+                                {this.renderDetails('debt')}
+                                <h2>Add Debt</h2>
+                                <input type="text" value={debtCategory} onChange={(e) => this.setState({ debtCategory: e.target.value })} placeholder="Debt Category" />
+                                <input type="number" value={debtAmount} onChange={(e) => this.setState({ debtAmount: e.target.value })} placeholder="Amount" />
+                                <button onClick={() => this.addDetail('debt')}>Add Debt</button>
+
+                                <h2>Bill Details</h2>
+                                {this.renderDetails('bill')}
+                                <h2>Add Bill</h2>
+                                <input type="text" value={billCategory} onChange={(e) => this.setState({ billCategory: e.target.value })} placeholder="Bill Category" />
+                                <input type="number" value={billAmount} onChange={(e) => this.setState({ billAmount: e.target.value })} placeholder="Amount" />
+                                <button onClick={() => this.addDetail('bill')}>Add Bill</button>
                             </div>
                         )}
                     </div>
