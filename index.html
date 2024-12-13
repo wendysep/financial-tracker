@@ -68,16 +68,13 @@
                     currentPage: 'main',
                     transactions: {}, // Keyed by month
                     categories: { income: [], expense: [], savings: [], debt: [], bills: [] },
-                    monthlyData: { income: {}, expense: {}, savings: {}, debt: {}, bills: {} },
                 };
             }
 
             registerUser = (username, password) => {
                 const users = { ...this.state.users };
                 if (!users[username]) {
-                    users[username] = {
-                        password,
-                    };
+                    users[username] = { password };
                     this.setState({ users });
                     alert('User registered successfully!');
                 } else {
@@ -100,19 +97,44 @@
 
             addCategory = (type, category) => {
                 const categories = { ...this.state.categories };
-                const monthlyData = { ...this.state.monthlyData };
-
                 if (!categories[type].includes(category)) {
                     categories[type].push(category);
-                    monthlyData[type][category] = Array(12).fill(0);
-                    this.setState({ categories, monthlyData });
+                    this.setState({ categories });
                 }
             };
 
-            updateMonthlyData = (type, category, monthIndex, amount) => {
-                const monthlyData = { ...this.state.monthlyData };
-                monthlyData[type][category][monthIndex] = parseFloat(amount) || 0;
-                this.setState({ monthlyData });
+            addTransaction = (month, transaction) => {
+                const transactions = { ...this.state.transactions };
+                if (!transactions[month]) {
+                    transactions[month] = [];
+                }
+                transactions[month].push(transaction);
+                this.setState({ transactions });
+            };
+
+            calculateTotals = (type) => {
+                const { transactions, categories } = this.state;
+                const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+
+                // Initialize totals for each category and month
+                const totals = categories[type].reduce((acc, category) => {
+                    acc[category] = Array(12).fill(0);
+                    return acc;
+                }, {});
+
+                // Iterate through transactions to calculate totals
+                Object.entries(transactions).forEach(([month, monthTransactions]) => {
+                    const monthIndex = months.indexOf(month);
+                    if (monthIndex !== -1) {
+                        monthTransactions.forEach(({ category, amount }) => {
+                            if (categories[type].includes(category)) {
+                                totals[category][monthIndex] += amount;
+                            }
+                        });
+                    }
+                });
+
+                return totals;
             };
 
             renderTabs = () => {
@@ -135,8 +157,9 @@
             };
 
             renderTable = (type) => {
-                const { categories, monthlyData } = this.state;
+                const { categories } = this.state;
                 const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+                const totals = this.calculateTotals(type);
 
                 return (
                     <div>
@@ -153,21 +176,13 @@
                             </thead>
                             <tbody>
                                 {categories[type].map((category, index) => {
-                                    const monthlyTotals = monthlyData[type][category] || Array(12).fill(0);
+                                    const monthlyTotals = totals[category] || Array(12).fill(0);
                                     const total = monthlyTotals.reduce((acc, val) => acc + val, 0);
                                     return (
                                         <tr key={index}>
                                             <td>{category}</td>
                                             {monthlyTotals.map((value, monthIndex) => (
-                                                <td key={monthIndex}>
-                                                    <input
-                                                        type="number"
-                                                        value={value}
-                                                        onChange={(e) =>
-                                                            this.updateMonthlyData(type, category, monthIndex, e.target.value)
-                                                        }
-                                                    />
-                                                </td>
+                                                <td key={monthIndex}>${value.toFixed(2)}</td>
                                             ))}
                                             <td>${total.toFixed(2)}</td>
                                         </tr>
@@ -179,7 +194,7 @@
                                     <td><strong>Total</strong></td>
                                     {months.map((_, monthIndex) => {
                                         const totalForMonth = categories[type]
-                                            .map((category) => monthlyData[type][category]?.[monthIndex] || 0)
+                                            .map((category) => totals[category]?.[monthIndex] || 0)
                                             .reduce((acc, val) => acc + val, 0);
                                         return <td key={monthIndex}>${totalForMonth.toFixed(2)}</td>;
                                     })}
@@ -187,7 +202,7 @@
                                         ${categories[type]
                                             .reduce(
                                                 (acc, category) =>
-                                                    acc + (monthlyData[type][category]?.reduce((sum, val) => sum + val, 0) || 0),
+                                                    acc + (totals[category]?.reduce((sum, val) => sum + val, 0) || 0),
                                                 0
                                             )
                                             .toFixed(2)}
@@ -234,6 +249,71 @@
                         </form>
                         <h3>Summary Tables</h3>
                         {Object.keys(this.state.categories).map((type) => this.renderTable(type))}
+                    </div>
+                );
+            };
+
+            renderTransactionPage = (month) => {
+                const { transactions, categories } = this.state;
+
+                return (
+                    <div>
+                        <h2>Transactions for {month}</h2>
+                        <form
+                            onSubmit={(e) => {
+                                e.preventDefault();
+                                const description = e.target.elements.description.value;
+                                const amount = parseFloat(e.target.elements.amount.value);
+                                const category = e.target.elements.category.value;
+                                if (!isNaN(amount)) {
+                                    this.addTransaction(month, { description, amount, category });
+                                    e.target.reset();
+                                } else {
+                                    alert('Invalid amount!');
+                                }
+                            }}
+                        >
+                            <div>
+                                <label>
+                                    Description: <input type="text" name="description" required />
+                                </label>
+                            </div>
+                            <div>
+                                <label>
+                                    Amount: <input type="number" name="amount" required />
+                                </label>
+                            </div>
+                            <div>
+                                <label>
+                                    Category:
+                                    <select name="category" required>
+                                        {Object.values(categories).flat().map((category, index) => (
+                                            <option key={index} value={category}>{category}</option>
+                                        ))}
+                                    </select>
+                                </label>
+                            </div>
+                            <button type="submit">Add Transaction</button>
+                        </form>
+                        <h3>Transaction List</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Description</th>
+                                    <th>Amount</th>
+                                    <th>Category</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {(transactions[month] || []).map((transaction, index) => (
+                                    <tr key={index}>
+                                        <td>{transaction.description}</td>
+                                        <td>${transaction.amount.toFixed(2)}</td>
+                                        <td>{transaction.category}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
                 );
             };
@@ -294,6 +374,7 @@
                     <div>
                         {this.renderTabs()}
                         {currentPage === 'main' && this.renderMainPage()}
+                        {currentPage !== 'main' && this.renderTransactionPage(currentPage)}
                     </div>
                 );
             }
