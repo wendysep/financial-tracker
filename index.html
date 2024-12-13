@@ -46,8 +46,9 @@
                     currentUser: null,
                     username: '',
                     password: '',
-                    income: '',
-                    bills: '',
+                    incomeSource: '',
+                    incomeAmount: '',
+                    incomeDetails: {},
                 };
             }
 
@@ -55,7 +56,7 @@
                 const { username, password, users } = this.state;
                 if (username && password) {
                     if (!users[username]) {
-                        users[username] = { password, annualTotals: {}, income: [], bills: [] };
+                        users[username] = { password, annualTotals: {}, incomeDetails: {} };
                         this.setState({ users });
                         alert('User registered successfully!');
                     } else {
@@ -75,80 +76,62 @@
                 }
             };
 
-            addIncome = () => {
-                const { income, currentUser, users } = this.state;
-                const amount = parseFloat(income);
-                if (!isNaN(amount)) {
-                    users[currentUser].income.push(amount);
-                    this.updateAnnualTotals();
-                    this.setState({ users, income: '' });
+            addIncomeDetail = () => {
+                const { incomeSource, incomeAmount, currentUser, users } = this.state;
+                const amount = parseFloat(incomeAmount);
+                if (incomeSource && !isNaN(amount)) {
+                    const user = users[currentUser];
+                    if (!user.incomeDetails[incomeSource]) {
+                        user.incomeDetails[incomeSource] = Array(12).fill(0);
+                    }
+                    user.incomeDetails[incomeSource][new Date().getMonth()] += amount;
+                    this.setState({ users, incomeSource: '', incomeAmount: '' });
+                    alert('Income added!');
                 } else {
-                    alert('Please enter a valid number.');
+                    alert('Please enter a valid source and amount.');
                 }
             };
 
-            addBill = () => {
-                const { bills, currentUser, users } = this.state;
-                const amount = parseFloat(bills);
-                if (!isNaN(amount)) {
-                    users[currentUser].bills.push(amount);
-                    this.updateAnnualTotals();
-                    this.setState({ users, bills: '' });
-                } else {
-                    alert('Please enter a valid number.');
-                }
-            };
-
-            updateAnnualTotals = () => {
+            renderIncomeDetails = () => {
                 const { currentUser, users } = this.state;
                 const user = users[currentUser];
-                const income = user.income.reduce((acc, val) => acc + val, 0);
-                const bills = user.bills.reduce((acc, val) => acc + val, 0);
-
-                user.annualTotals = {
-                    Income: income,
-                    TotalExpenses: bills,
-                    Bills: bills,
-                    Expenses: bills,
-                    Savings: income - bills,
-                    Debt: 0
-                };
-
-                this.setState({ users });
-            };
-
-            renderAnnualTotals = () => {
-                const { currentUser, users } = this.state;
-                const user = users[currentUser];
-                if (!user || !user.annualTotals) return null;
+                if (!user || !user.incomeDetails) return null;
 
                 const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
                 return (
                     <table>
                         <thead>
                             <tr>
-                                <th>ANNUAL TOTALS</th>
+                                <th>INCOME</th>
                                 {months.map((month, index) => (
                                     <th key={index}>{month}</th>
                                 ))}
                             </tr>
                         </thead>
                         <tbody>
-                            {Object.entries(user.annualTotals).map(([key, value]) => (
-                                <tr key={key}>
-                                    <td>{key}</td>
-                                    {months.map((_, index) => (
-                                        <td key={index}>${value.toFixed(2)}</td>
+                            {Object.entries(user.incomeDetails).map(([source, amounts]) => (
+                                <tr key={source}>
+                                    <td>{source}</td>
+                                    {amounts.map((amount, index) => (
+                                        <td key={index}>${amount.toFixed(2)}</td>
                                     ))}
                                 </tr>
                             ))}
+                            <tr>
+                                <td><strong>TOTAL</strong></td>
+                                {months.map((_, index) => (
+                                    <td key={index}>
+                                        ${Object.values(user.incomeDetails).reduce((acc, source) => acc + (source[index] || 0), 0).toFixed(2)}
+                                    </td>
+                                ))}
+                            </tr>
                         </tbody>
                     </table>
                 );
             };
 
             render() {
-                const { currentUser, username, password, income, bills } = this.state;
+                const { currentUser, username, password, incomeSource, incomeAmount } = this.state;
                 return (
                     <div>
                         {!currentUser ? (
@@ -165,16 +148,13 @@
                             </div>
                         ) : (
                             <div>
-                                <h2>Annual Totals</h2>
-                                {this.renderAnnualTotals()}
+                                <h2>Income Details</h2>
+                                {this.renderIncomeDetails()}
 
                                 <h2>Add Income</h2>
-                                <input type="number" value={income} onChange={(e) => this.setState({ income: e.target.value })} placeholder="Income Amount" />
-                                <button onClick={this.addIncome}>Add Income</button>
-
-                                <h2>Add Bill</h2>
-                                <input type="number" value={bills} onChange={(e) => this.setState({ bills: e.target.value })} placeholder="Bill Amount" />
-                                <button onClick={this.addBill}>Add Bill</button>
+                                <input type="text" value={incomeSource} onChange={(e) => this.setState({ incomeSource: e.target.value })} placeholder="Income Source" />
+                                <input type="number" value={incomeAmount} onChange={(e) => this.setState({ incomeAmount: e.target.value })} placeholder="Amount" />
+                                <button onClick={this.addIncomeDetail}>Add Income</button>
                             </div>
                         )}
                     </div>
